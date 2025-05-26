@@ -32,7 +32,7 @@ client = tweepy.Client(bearer_token=bearer_token,
                        access_token_secret=access_token_secret)
 
 def save_tweet_metrics(tweet_id, metrics):
-    file_name = f"{tweet_id}.csv"
+    file_name = f'tweet_data/{tweet_id}.csv'
     file_exists = os.path.isfile(file_name)
 
     with open(file_name, mode='a', newline='') as file:
@@ -44,7 +44,7 @@ def save_tweet_metrics(tweet_id, metrics):
 
 
 def check_priority(tweet_id):
-    file_name = f"{tweet_id}.csv"
+    file_name = f'tweet_data/{tweet_id}.csv'
     if not os.path.exists(file_name):
         return 0
     tweet_data = pd.read_csv(file_name)
@@ -56,7 +56,7 @@ def check_priority(tweet_id):
     # print(change)
     if change > 1.05:  # if change in impressions is bigger than 5 %
         return 0
-    elif change > 1.005:
+    elif change > 1.005:  # these numbers are very arbitrary
         return 1
     elif change > 1.0005:
         return 2
@@ -85,7 +85,7 @@ def fetch_tweet(tweet_id, max_retries=15):
             metrics = tweet.data['public_metrics']
             metrics['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             save_tweet_metrics(tweet_id, metrics)
-            print(f"{datetime.now().strftime('%H.%M')}: Successfully saved metrics for tweet {tweet_id}.")
+            print(f"{datetime.now().strftime('%H.%M')}: Successfully saved metrics for tweet {tweet_id}")
             return
         except tweepy.TweepyException as e:
             print(f"Error fetching tweet: {e}")
@@ -140,11 +140,7 @@ def process_next_tweet():
 def monitor_tweets():
     # Schedule the function to run every 15 minutes
     # Twitter API's free tier is limited to one request every 15 minutes
-    schedule.every(15).minutes.do(process_next_tweet)
-    print("Starting scheduler. Press Ctrl+C to stop.")
-
-    # fetch a tweet immediately after starting the program
-    process_next_tweet()
+    print("Starting in 15 seconds.")
 
     # The user should be able to add or remove tweets from the queue from the terminal
     # Start a separate thread to handle user input
@@ -159,6 +155,15 @@ def monitor_tweets():
                 print("Invalid input. Use +<id> to add or -<id> to remove.")
 
     threading.Thread(target=input_thread, daemon=True).start()
+
+    # gives the user 15 minútes to add tweets if non are in queue
+    time.sleep(15)
+
+    schedule.every(15).minutes.do(process_next_tweet)
+    print("Starting scheduler. Press Ctrl+C to stop.")
+
+    # fetch a tweet immediately after starting the program
+    process_next_tweet()
 
     while True:
         schedule.run_pending()
@@ -185,7 +190,7 @@ def get_original_posting_time(tweet_ids: list, timezone='Europe/Helsinki'):
 
             # save metrics
             save_tweet_metrics(tweet_id, metrics)
-            print(f"{datetime.now().strftime('%H.%M')}: Successfully saved metrics for tweet {tweet_id}.")
+            print(f"{datetime.now().strftime('%H.%M')}: Successfully saved metrics for tweet {tweet_id}")
         except Exception as e:
             print(f"Error fetching tweet {tweet_id}: {e}")
 
@@ -211,6 +216,9 @@ def main():
     # add_tweet_to_queue('1924127364780261454')  # Alice Weidel: Bielefeld: Ein Syrer verletzt 5 Menschen zum Teil schwer.
     # add_tweet_to_queue('1924428162257047752')  # Haavisto: Maanantaiaamuna oli mahdollisuus käydä korkealaatuista keskustelua nuorten tilanteesta...
     # add_tweet_to_queue('1924437434521010605')  # Orpo: Gazan siviilien kärsimyksen on loputtava. Suomi vaatii Israelia...
+    add_tweet_to_queue('1926997808369840418')
+    add_tweet_to_queue('1927003736154554560')
+    add_tweet_to_queue('1927013798415585709')
 
     monitor_tweets()
 
