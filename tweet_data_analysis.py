@@ -88,8 +88,11 @@ def interpolate_data(tweet_data, frequency='1h'):
     # Reset the index
     interpolated_data.reset_index(inplace=True)
 
+    # add a share count column
+    tweet_data['share_count'] = tweet_data['retweet_count'] + tweet_data['quote_count']
 
-    # Compute the change as the difference between current and previous value
+
+    # add a impression_change column, compute the change as the difference between current and previous value
     interpolated_data['impression_change'] = interpolated_data['impression_count'] - interpolated_data['impression_count'].shift(1)
     interpolated_data.loc[0, 'impression_change'] = 0
     interpolated_data['impression_change'] = interpolated_data['impression_change'].astype(int)
@@ -97,7 +100,7 @@ def interpolate_data(tweet_data, frequency='1h'):
     return interpolated_data
 
 
-def plot_metric_over_time(tweet_data, metric):
+def plot_metric_over_time(tweet_data, metric, title=None):
     """
     Plots the number of likes and impressions over time for a tweet using two y-axes.
 
@@ -136,7 +139,11 @@ def plot_metric_over_time(tweet_data, metric):
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%-d.%-m.\n%H:%M'))
 
     # fig.tight_layout()
-    plt.title(f'{metric} Over Time')
+    if title:
+        plt.title(title)
+    else:
+        plt.title(f'{metric} Over Time')
+
     ax1.xaxis.set_major_locator(MaxNLocator(nbins=15))
     ax1.grid(True)
     plt.show()
@@ -283,58 +290,6 @@ def power_law_distribution(tweet_data, metric, bin_count=10):
     :param bin_count:
     :return:
     """
-    # p_min = tweet_data[metric].min()
-    # if p_min < 1:
-    #     p_min = 1
-    # p_max = tweet_data[metric].max()
-    #
-    # # evenly spaced bins
-    # # bin_edges = np.linspace(p_min, p_max, num=bin_count + 1)
-    #
-    # # logarithmic spaced bins
-    # bin_edges = np.logspace(np.log(p_min), np.log(p_max), num=bin_count + 1)
-    #
-    # # bin_edges[0] = 0
-    # bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
-    #
-    # # count the number of values in each bin
-    # bins, _ = np.histogram(tweet_data[metric], bins=bin_edges)
-    #
-    # print(bin_edges)
-    # print(bin_centers)
-    # print(bins)
-    #
-    # x = np.arange(1, bin_count + 1)  # avoid log(0)
-    # y = bins
-    #
-    # y_log = np.log(y + 1e-10)  # avoid log(0)
-    # x_log = np.log(x)
-    #
-    # p = np.polyfit(x_log, y_log, 1)
-    #
-    # # get parameters for power law  |  y=c⋅x^k
-    # c = np.exp(p[1])
-    # k = p[0]
-    #
-    # # fitted values
-    # x_fitted = np.linspace(np.min(x), np.max(x), len(x))
-    # y_fitted = c * x_fitted ** k  # y=c⋅x^k
-    #
-    # r2 = r2_score(y_log, np.log(y_fitted+ 1e-10))
-    #
-    # # Plotting the histogram
-    # plt.figure(figsize=(10, 6))
-    # plt.bar(x, y, width=0.8, align='center', alpha=0.6, label='Data')
-    # plt.plot(x, y_fitted, 'r-',
-    #          label=f'Power law fit\ny = {c:.4f} * x^{k:.4f} (R² = {r2:.4f})')
-    # plt.xlabel('Bins')
-    # plt.ylabel('Frequency')
-    # plt.title(f'Distribution of {metric}')
-    # plt.xticks(x, [f'{round(bin_edges[i])} - {round(bin_edges[i + 1])}' for i in range(len(bin_centers))], rotation=45)
-    # # plt.xticks(x, [f'{round(j[0])} - {round(j[1] - 1)}' for j in bin_edges], rotation=45)
-    # plt.legend()
-    # plt.tight_layout()
-    # plt.show()
 
     # get the minimum and maximum values of the metric
     p_min = tweet_data[metric].min()
@@ -343,10 +298,10 @@ def power_law_distribution(tweet_data, metric, bin_count=10):
     p_max = tweet_data[metric].max()
 
     # generate logarithmically spaced bins
-    bin_edges = np.logspace(np.log10(p_min), np.log10(p_max+1), num=bin_count + 1)
+    # bin_edges = np.logspace(np.log10(p_min), np.log10(p_max+1), num=bin_count + 1)
 
-    # # evenly spaced bins
-    # bin_edges = np.linspace(p_min, p_max, num=bin_count + 1)
+    # evenly spaced bins
+    bin_edges = np.linspace(p_min, p_max, num=bin_count + 1)
 
     # Calculate the bin centers
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -379,22 +334,45 @@ def power_law_distribution(tweet_data, metric, bin_count=10):
     # calculate the R² value
     r2 = r2_score(y_log, np.log(y_fitted + 1e-10))
 
-    # Plot the histogram and the power law fit
-    plt.figure(figsize=(12, 8))
-    plt.bar(x, y, width=0.8, align='center', alpha=0.6, label='Data')
-    ax2 = plt.gca().twinx()
-    ax2.plot(x, y_fitted, 'r-',
-             label=f'Power law fit\ny = {c:.4f} * x^{k:.4f} (R² = {r2:.4f})')
-    plt.xlabel('Bins')
-    plt.ylabel('Frequency')
+    # # Plot the histogram and the power law fit
+    # plt.figure(figsize=(12, 8))
+    # plt.bar(x, y, width=0.8, align='center', alpha=0.6, label='Data')
+    # ax2 = plt.gca().twinx()
+    # ax2.plot(x, y_fitted, 'r-',
+    #          label=f'Power law fit\ny = {c:.4f} * x^{k:.4f} (R² = {r2:.4f})')
+    # plt.xlabel('Bins')
+    # plt.ylabel('Tweet frequency')
+    # ax2.set_ylabel('Power Law Fit')
+    # plt.title(f'Distribution of {metric} for Finnish tweets')
+    # plt.xticks(x, [f'{round(bin_edges[i])} - {round(bin_edges[i + 1])}' for i in range(len(bin_centers))], rotation=45)
+    # plt.legend(loc='upper left')
+    # ax2.legend(loc='upper right')
+    # plt.grid()
+    # plt.tight_layout()
+    # plt.show()
+
+    fig, ax1 = plt.subplots(figsize=(12, 8))
+
+    # Plot histogram on ax1
+    ax1.bar(x, y, width=0.8, align='center', alpha=0.6, label='Data')
+    ax1.set_xlabel('Bins')
+    ax1.set_ylabel('Tweet frequency')
+    ax1.set_title(f'Distribution of {metric} for Finnish tweets')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels([f'{round(bin_edges[i])} - {round(bin_edges[i + 1])}' for i in range(len(bin_centers))],
+                        rotation=45)
+
+    # Plot power law fit on ax2
+    ax2 = ax1.twinx()
+    ax2.plot(x_fitted, y_fitted, 'r-', label=f'Power law fit\ny = {c:.4f} * x^{k:.4f} (R² = {r2:.4f})')
     ax2.set_ylabel('Power Law Fit')
-    plt.title(f'Distribution of {metric}')
-    plt.xticks(x, [f'{round(bin_edges[i])} - {round(bin_edges[i + 1])}' for i in range(len(bin_centers))], rotation=45)
-    plt.legend(loc='upper left')
+
+    ax1.legend(loc='upper left')
     ax2.legend(loc='upper right')
-    plt.grid()
+    ax1.grid()
     plt.tight_layout()
     plt.show()
+
 
 def plot_comparison(original_data, interpolated_data, metric='impression_count'):
     """
@@ -469,18 +447,6 @@ def compare_infection_to_data(trends, tweet_data, data_type, plot=True, title=No
     infected = trends[0]['trends']['node_count'][1]
 
     score = mean_squared_error(tweet_data[data_type], infected)
-    # score = mean_absolute_error(tweet_data[data_type], infected)
-    # score = 1 - r2_score(tweet_data[data_type], infected)
-
-    # # Calculate the lower and upper bounds for the 5% range
-    # lower_bound = tweet_data[data_type] * 0.95
-    # upper_bound = tweet_data[data_type] * 1.05
-    # # Count how many predicted values are within the bounds
-    # score = ((infected >= lower_bound) & (infected <= upper_bound)).sum()
-    # # lower is better
-    # score = len(tweet_data) - score
-
-    # mse = abs(sum(trends[0]['trends']['node_count'][1]) - tweet_data['impression_count'].iloc[-1])
 
     if not plot:
         return score
@@ -554,7 +520,7 @@ def run_SIS_simulation(graph, tweet_data, beta, lambda_, initial_fraction_infect
     config.add_model_parameter('fraction_infected', initial_fraction_infected)  # initial fraction of infected
     model.set_initial_status(config)
 
-    title = f'SIS simulation of {data_type} with parameters b={beta}, l={lambda_}'
+    title = f'SIS simulation of {data_type} with parameters b={beta:.3f}, l={lambda_:.2f}'
 
     return run_simulation_placeholder(model, tweet_data, data_type, title, plot, return_MSE)
 
@@ -567,7 +533,7 @@ def run_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected
     config.add_model_parameter('fraction_infected', initial_fraction_infected)  # initial fraction of infected
     model.set_initial_status(config)
 
-    title = f'SIR simulation of {data_type} with parameters b={beta}, l={gamma}'
+    title = f'SIR simulation of {data_type} with parameters b={beta:.3f}, l={gamma:.2f}'
 
     return run_simulation_placeholder(model, tweet_data, data_type, title, plot, return_MSE)
 
@@ -577,6 +543,9 @@ def run_simulation_placeholder(model, tweet_data, data_type, title, plot=False, 
     # Run the simulation
     iterations = model.iteration_bunch(len(tweet_data))
     trends = model.build_trends(iterations)
+
+    if return_MSE == "trends":  # im really sorry about this messy code
+        return trends
 
     # Compare with real data and calculate similarity
     similarity = compare_infection_to_data(trends, tweet_data, plot=plot, data_type=data_type, title=title)
@@ -588,37 +557,37 @@ def run_simulation_placeholder(model, tweet_data, data_type, title, plot=False, 
     return sum(trends[0]['trends']['node_count'][1])
 
 
-def run_simulation(graph, tweet_data, beta, lambda_, gamma, initial_fraction_infected, infection_model, data_type, plot=False, return_MSE=True):
-    # TODO: replace this function with run_simulation_placeholder()
-    # Model configuration
-    config = mc.Configuration()
-    config.add_model_parameter('beta', beta)
-
-
-    config.add_model_parameter('fraction_infected', initial_fraction_infected)  # initial fraction of infected
-
-    if infection_model.upper() == 'SIR':
-        config.add_model_parameter('gamma', gamma)
-        model = ep.SIRModel(graph)
-
-    elif infection_model.upper() == 'SIS':
-        config.add_model_parameter('lambda', lambda_)
-        model = ep.SISModel(graph)
-
-    model.set_initial_status(config)
-
-    # Run the simulation
-    iterations = model.iteration_bunch(len(tweet_data))
-    trends = model.build_trends(iterations)
-
-    # Compare with real data and calculate similarity
-    similarity = compare_infection_to_data(trends, tweet_data, plot=plot, data_type=data_type, title=f'{infection_model} simulation of {data_type} with parameters b={beta}, l={lambda_}, g={gamma}')
-
-    if return_MSE:
-        return similarity
-
-    # return the sum of all nodes infected
-    return sum(trends[0]['trends']['node_count'][1])
+# def run_simulation(graph, tweet_data, beta, lambda_, gamma, initial_fraction_infected, infection_model, data_type, plot=False, return_MSE=True):
+#     # TODO: replace this function with run_simulation_placeholder()
+#     # Model configuration
+#     config = mc.Configuration()
+#     config.add_model_parameter('beta', beta)
+#
+#
+#     config.add_model_parameter('fraction_infected', initial_fraction_infected)  # initial fraction of infected
+#
+#     if infection_model.upper() == 'SIR':
+#         config.add_model_parameter('gamma', gamma)
+#         model = ep.SIRModel(graph)
+#
+#     elif infection_model.upper() == 'SIS':
+#         config.add_model_parameter('lambda', lambda_)
+#         model = ep.SISModel(graph)
+#
+#     model.set_initial_status(config)
+#
+#     # Run the simulation
+#     iterations = model.iteration_bunch(len(tweet_data))
+#     trends = model.build_trends(iterations)
+#
+#     # Compare with real data and calculate similarity
+#     similarity = compare_infection_to_data(trends, tweet_data, plot=plot, data_type=data_type, title=f'{infection_model} simulation of {data_type} with parameters b={beta}, l={lambda_}, g={gamma}')
+#
+#     if return_MSE:
+#         return similarity
+#
+#     # return the sum of all nodes infected
+#     return sum(trends[0]['trends']['node_count'][1])
 
 
 
@@ -635,6 +604,8 @@ def run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fr
     :param return_MSE:
     :return:
     """
+    night_time_multiplier = 0.1
+
     # Model configuration
     config = mc.Configuration()
     config.add_model_parameter('beta', beta)
@@ -652,7 +623,7 @@ def run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fr
     def get_beta():
         # lower infection rate at night
         if current_time.hour >= 22 or current_time.hour <= 5:
-            return beta * 0.05
+            return beta * night_time_multiplier
         # normal infection rate during the day
         return beta
 
@@ -668,7 +639,7 @@ def run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fr
     # iterations = model.iteration_bunch(len(tweet_data))
     trends = model.build_trends(iterations)
 
-    title = f'Time dependent SIR simulation of {data_type} with parameters b={beta}, g={gamma}'
+    title = f'Time dependent SIR simulation of {data_type} with parameters b={beta:.2f}, b (night)={beta*night_time_multiplier:.3f}, g={gamma:.3f}'
 
     # Compare with real data and calculate similarity
     similarity = compare_infection_to_data(trends, tweet_data, plot=plot, data_type=data_type, title=title)
@@ -679,68 +650,144 @@ def run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fr
     # return the sum of all nodes infected
     return sum(trends[0]['trends']['node_count'][1])
 
-
-def model_infection(graph, tweet_data, tweet_id, beta_range, lambda_range, gamma_range, initial_fraction_infected, model, data_type, save_results=True, display_results=False):
-    """
-    :param graph:
-    :param tweet_data:
-    :param tweet_id:
-    :param beta_range: np.arange(0.1, 0.05, -0.01)  # Infection
-    :param lambda_range: np.arange(0.1, 0.05, -0.01)  # Recovery
-    :param gamma_range: np.arange(0.1, 0.05, -0.05)  # Removal
-    :param initial_fraction_infected:
-    """
-
+def find_best_SIR_parameters(graph, tweet_data, tweet_id, beta_range, gamma_range, initial_fraction_infected, data_type, save_results=True, display_results=False):
     ### simulate all parameter combinations ###
+    # print(f'{datetime.datetime.now().strftime("%H:%M")}:'
+    # f' Starting simulation with {len(beta_range) * len(gamma_range)} combinations.')
     param_combinations = []
-    if model.upper() == 'SIR':
-        # print(f'{datetime.datetime.now().strftime("%H:%M")}:'
-              # f' Starting simulation with {len(beta_range) * len(gamma_range)} combinations.')
-        for i, beta in enumerate(beta_range):
-            for gamma in gamma_range:
-                # simulate the parameters
+    for i, beta in enumerate(beta_range):
+        for gamma in gamma_range:
+            # simulate the parameters
 
-                """running a normal simulation"""
-                score = run_simulation(graph, tweet_data, beta, 0, gamma, initial_fraction_infected, plot=False, infection_model=model, data_type=data_type)
-                """running the simulation on time dependant beta"""
-                # score = run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type, plot=False)
+            """running a normal simulation"""
+            score = run_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type, plot=False)
+            """running the simulation on time dependant beta"""
+            # score = run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type, plot=False)
 
+            param_combinations.append((beta, gamma, (int)(score)))
+        # print(f'{datetime.datetime.now().strftime("%H:%M")}: Simulation {((i+1)/len(beta_range))*100:.0f} % complete.')
 
-                param_combinations.append((beta, 0, gamma, (int)(score)))
-            # print(f'{datetime.datetime.now().strftime("%H:%M")}: Simulation {((i+1)/len(beta_range))*100:.0f} % complete.')
-    elif model.upper() == 'SIS':
-        print(f'{datetime.datetime.now().strftime("%H:%M")}:'
-              f' Starting simulation with {len(beta_range) * len(lambda_range)} combinations.')
-        for i, beta in enumerate(beta_range):
-            for lambda_ in lambda_range:
-                # simulate the parameters
-                score = run_simulation(graph, tweet_data, beta, lambda_, 0, initial_fraction_infected, plot=False, infection_model=model, data_type=data_type)
-                param_combinations.append((beta, lambda_, 0, (int)(score)))
-            print(f"{datetime.datetime.now().strftime('%H:%M')}: Simulation {((i+1)/len(beta_range))*100:.0f} % complete.")
-
-    df = pd.DataFrame(param_combinations, columns=['beta', 'lambda', 'gamma', 'score'])
+    df = pd.DataFrame(param_combinations, columns=['beta', 'gamma', 'score'])
     if save_results:
         ### save the results to a CSV file ###
         now = datetime.datetime.now().strftime('%d_%H_%M')
         id = tweet_id[-4:]
-        file_name = f'simulation_results/simulation_results_{model}_{id}_{now}.csv'
+        file_name = f'simulation_results/simulation_results_SIR_{id}_{now}.csv'
+        df.to_csv(file_name, index=False)
+        print(f'Results saved to {file_name}')
+
+    # Find the row with the minimum (best) score
+    best_row = df.loc[df['score'].idxmin()]
+    # Extract the parameters
+    beta, gamma, score = best_row['beta'], best_row['gamma'], best_row['score']
+    print(f'MSE of the best SIR simulation with parameters b,g=({beta:.3f}, {gamma:.3f}): ', score)
+
+    if display_results:
+        # display the graph of the best simulation
+        score = run_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type, plot=True)
+
+    return (beta, gamma)
+
+
+def find_best_SIS_parameters(graph, tweet_data, tweet_id, beta_range, lambda_range, initial_fraction_infected, data_type, save_results=True, display_results=False):
+    ### simulate all parameter combinations ###
+    # print(f'{datetime.datetime.now().strftime("%H:%M")}:'
+    #       f' Starting simulation with {len(beta_range) * len(lambda_range)} combinations.')
+    param_combinations = []
+    for i, beta in enumerate(beta_range):
+        for lambda_ in lambda_range:
+            # simulate the parameters
+            score = run_SIS_simulation(graph, tweet_data, beta, lambda_, initial_fraction_infected, data_type, plot=False, return_MSE=True)
+            param_combinations.append((beta, lambda_, (int)(score)))
+        # print(f"{datetime.datetime.now().strftime('%H:%M')}: Simulation {((i + 1) / len(beta_range)) * 100:.0f} % complete.")
+
+    df = pd.DataFrame(param_combinations, columns=['beta', 'lambda', 'score'])
+    if save_results:
+        ### save the results to a CSV file ###
+        now = datetime.datetime.now().strftime('%d_%H_%M')
+        id = tweet_id[-4:]
+        file_name = f'simulation_results/simulation_results_SIS_{id}_{now}.csv'
         df.to_csv(file_name, index=False)
         print(f'Results saved to {file_name}')
 
     # Find the row with the minimum score
     best_row = df.loc[df['score'].idxmin()]
     # Extract the parameters
-    beta, lambda_, gamma, score = best_row['beta'], best_row['lambda'], best_row['gamma'], best_row['score']
-    print(f'MSE of the best simulation with parameters b,g,l=({beta:.2f}, {lambda_:.2f}, {gamma:.2f}): ', score)
+    beta, lambda_, score = best_row['beta'], best_row['lambda'], best_row['score']
+    print(f'MSE of the best simulation with parameters b,g,l=({beta:.3f}, {lambda_:.3f}): ', score)
 
     if display_results:
         ### display the result of the best simulation ###
 
         # score = run_simulation(graph, tweet_data, beta, lambda_, gamma, initial_fraction_infected, plot=True, infection_model=model, data_type=data_type)
-        score = run_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type=data_type, plot=True)
+        score = run_SIS_simulation(graph, tweet_data, beta, lambda_, initial_fraction_infected, data_type,
+                                   plot=True, return_MSE=True)
         # print(f'MSE of the best simulation with parameters b,g,l=({beta}, {lambda_}, {gamma}): ', score)
 
-    return (beta, lambda_, gamma)
+    return (beta, lambda_)
+
+
+# def model_infection(graph, tweet_data, tweet_id, beta_range, lambda_range, gamma_range, initial_fraction_infected, model, data_type, save_results=True, display_results=False):
+#     """
+#     :param graph:
+#     :param tweet_data:
+#     :param tweet_id:
+#     :param beta_range: np.arange(0.1, 0.05, -0.01)  # Infection
+#     :param lambda_range: np.arange(0.1, 0.05, -0.01)  # Recovery
+#     :param gamma_range: np.arange(0.1, 0.05, -0.05)  # Removal
+#     :param initial_fraction_infected:
+#     """
+#
+#     ### simulate all parameter combinations ###
+#     param_combinations = []
+#     if model.upper() == 'SIR':
+#         # print(f'{datetime.datetime.now().strftime("%H:%M")}:'
+#               # f' Starting simulation with {len(beta_range) * len(gamma_range)} combinations.')
+#         for i, beta in enumerate(beta_range):
+#             for gamma in gamma_range:
+#                 # simulate the parameters
+#
+#                 """running a normal simulation"""
+#                 score = run_simulation(graph, tweet_data, beta, 0, gamma, initial_fraction_infected, plot=False, infection_model=model, data_type=data_type)
+#                 """running the simulation on time dependant beta"""
+#                 # score = run_time_dependent_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type, plot=False)
+#
+#
+#                 param_combinations.append((beta, 0, gamma, (int)(score)))
+#             # print(f'{datetime.datetime.now().strftime("%H:%M")}: Simulation {((i+1)/len(beta_range))*100:.0f} % complete.')
+#     elif model.upper() == 'SIS':
+#         print(f'{datetime.datetime.now().strftime("%H:%M")}:'
+#               f' Starting simulation with {len(beta_range) * len(lambda_range)} combinations.')
+#         for i, beta in enumerate(beta_range):
+#             for lambda_ in lambda_range:
+#                 # simulate the parameters
+#                 score = run_simulation(graph, tweet_data, beta, lambda_, 0, initial_fraction_infected, plot=False, infection_model=model, data_type=data_type)
+#                 param_combinations.append((beta, lambda_, 0, (int)(score)))
+#             print(f"{datetime.datetime.now().strftime('%H:%M')}: Simulation {((i+1)/len(beta_range))*100:.0f} % complete.")
+#
+#     df = pd.DataFrame(param_combinations, columns=['beta', 'lambda', 'gamma', 'score'])
+#     if save_results:
+#         ### save the results to a CSV file ###
+#         now = datetime.datetime.now().strftime('%d_%H_%M')
+#         id = tweet_id[-4:]
+#         file_name = f'simulation_results/simulation_results_{model}_{id}_{now}.csv'
+#         df.to_csv(file_name, index=False)
+#         print(f'Results saved to {file_name}')
+#
+#     # Find the row with the minimum score
+#     best_row = df.loc[df['score'].idxmin()]
+#     # Extract the parameters
+#     beta, lambda_, gamma, score = best_row['beta'], best_row['lambda'], best_row['gamma'], best_row['score']
+#     print(f'MSE of the best simulation with parameters b,g,l=({beta:.2f}, {lambda_:.2f}, {gamma:.2f}): ', score)
+#
+#     if display_results:
+#         ### display the result of the best simulation ###
+#
+#         # score = run_simulation(graph, tweet_data, beta, lambda_, gamma, initial_fraction_infected, plot=True, infection_model=model, data_type=data_type)
+#         score = run_SIR_simulation(graph, tweet_data, beta, gamma, initial_fraction_infected, data_type=data_type, plot=True)
+#         # print(f'MSE of the best simulation with parameters b,g,l=({beta}, {lambda_}, {gamma}): ', score)
+#
+#     return (beta, lambda_, gamma)
 
 
 
@@ -751,197 +798,191 @@ def get_max_values(data_type, tweets):
     for id in tweets:
         # load data
         d = interpolate_data(load_csv(id), '1h')
-
-        # add impression change
-        d['impression_change'] = d['impression_count'] - d['impression_count'].shift(1)
-        d.loc[0, 'impression_change'] = 0
-        d['impression_change'] = d['impression_change'].astype(int)
-
         # save result
         interpolated_data_all.append(d)
 
     max_values = pd.DataFrame({data_type: [0] * len(interpolated_data_all)})
-    # Sum the impression_change from all DataFrames
+    # create a list of the largest values for each tweet
     for i, d in enumerate(interpolated_data_all):
         max_value = d[data_type].max()
         max_values.loc[i, data_type] = max_value
 
+    max_values.reset_index(drop=True, inplace=True)
     print(max_values)
 
-    max_values.reset_index(drop=True, inplace=True)
     return max_values
 
 
-# tweet_id = '1922356232074993957'  # Mari Rantanen: Suunta on oikea 👇🏻 Politiikalla on väliä.
 def main():
+    # TODO: clean this mess of a main function
+
     # all_tweets = [1922689448447300082, 1923052071332217205, 1923080523703779830,
     #               1923352006707581422, 1923342619909701903, 1923477098141802909,
     #               1923743558680428995, 1923754485874119007, 1923793436068487574,
     #               1924088518910808080, 1924428162257047752, 1924437434521010605]
 
-    all_tweets = [1922689448447300082, 1923052071332217205, 1923080523703779830,
-                  1923352006707581422, 1923342619909701903, 1923477098141802909,
-                  1923743558680428995, 1923754485874119007,
-                  1924088518910808080, 1924428162257047752, 1924437434521010605]
+    # all_tweets = [1922689448447300082, 1923052071332217205, 1923080523703779830,
+    #               1923352006707581422, 1923342619909701903, 1923477098141802909,
+    #               1923743558680428995, 1923754485874119007,
+    #               1924088518910808080, 1924428162257047752, 1924437434521010605]
 
-    fi_tweets = [1922689448447300082, 1923052071332217205, 1923352006707581422,
-                 1924088518910808080, 1924428162257047752, 1924437434521010605]
+    # usa_tweets = [1923080523703779830, 1923342619909701903, 1923477098141802909, # exclude trump because numbers too high
+    #               1923743558680428995, 1923754485874119007]
 
-    usa_tweets = [1923080523703779830, 1923342619909701903, 1923477098141802909, # exclude trump because numbers too high
-                  1923743558680428995, 1923754485874119007]
+    fi_tweets = [1924437434521010605, 1926997808369840418, 1927003736154554560,  # gaza, 0-5
+                 1927013798415585709, 1927429107190551035, 1927475122765430833,
 
-    tweet_id = '1922689448447300082'  # P.TOVERI Länsi ei ole sodassa Venäjän kanssa. Unohdettiin ilmeisesti kertoa...
-    # tweet_id = '1923052071332217205'  # Purra: Edustaja Bergbom totesi osuvasti, että kyselytunti oli taas...
+                 1922689448447300082, 1923052071332217205, 1923352006707581422, # non gaza 6-12
+                 1924088518910808080, 1924428162257047752, 1927292506988740922,
+                 1927278416195170648]
+
+
+    gaza_tweets = [1924437434521010605, 1926997808369840418, 1927003736154554560,
+                   1927013798415585709, 1927429107190551035, 1927475122765430833]
+
+    non_gaza_tweets = [1922689448447300082, 1923052071332217205, 1923352006707581422,
+                       1924088518910808080, 1924428162257047752, 1927292506988740922,
+                       1927278416195170648]
     # tweet_id = '1923080523703779830'  # Sen, Ted Cruz (R-Tex.) has been a major proponent of the idea
-    # tweet_id = '1923352006707581422'  # Purra: Monilapsisissa maahanmuuttajaperheissä summa voi nousta lähemmäs viittäkin tonnia
     # tweet_id = '1923342619909701903'  # Chip Roy: Why there’s a problem.
     # tweet_id = '1923477098141802909'  # Mike Collins: So it’s legal for a president to ship millions of illegal aliens into
     # tweet_id = '1923743558680428995'  # Claudia Tenney: The numbers don't lie, President Trump's America First economic plan is working!
     # tweet_id = '1923754485874119007'  # Bernie Sanders: 68,000 Americans already die every year because they don’t have access to the health care...
     # tweet_id = '1923793436068487574'  # Trump: 🇦🇪🇺🇸
-    # tweet_id = '1924088518910808080'  # Minja Koskela: Olin tänään monen muun tavoin marssimassa Epäluottamuslause-mielenosoituksessa
     # tweet_id = '1924127364780261454'  # Alice Weidel: Bielefeld: Ein Syrer verletzt 5 Menschen zum Teil schwer.
-    # tweet_id = '1924428162257047752'  # Haavisto: Maanantaiaamuna oli mahdollisuus käydä korkealaatuista keskustelua nuorten tilanteesta...
-    # tweet_id = '1924437434521010605'  # Orpo: Orpo: Gazan siviilien kärsimyksen on loputtava. Suomi vaatii Israelia...
 
-    # tweet_id = '1926997808369840418'
-    # tweet_id = '1927003736154554560'
-    # tweet_id = '1927013798415585709'
+    tweet_id = '1924437434521010605'  # POrpo: Gaza Orpo: Gazan siviilien kärsimyksen on loputtava. Suomi vaatii Israelia...
+    # tweet_id = '1926997808369840418'  # VHonk: Pal
+    # tweet_id = '1927003736154554560'  # STynk: Pal
+    # tweet_id = '1927013798415585709'  # LiAnd: Pal
+    # tweet_id = '1927429107190551035'  # TSamm: Gaza
+    # tweet_id = '1927475122765430833'  # AKale: Gaza
+
+    # tweet_id = '1922689448447300082'  # P.TOVERI Länsi ei ole sodassa Venäjän kanssa. Unohdettiin ilmeisesti kertoa...
+    # tweet_id = '1923052071332217205'  # Purra: Edustaja Bergbom totesi osuvasti, että kyselytunti oli taas...
+    # tweet_id = '1923352006707581422'  # Purra: Monilapsisissa maahanmuuttajaperheissä summa voi nousta lähemmäs viittäkin tonnia
+    # tweet_id = '1924088518910808080'  # Minja Koskela: Olin tänään monen muun tavoin marssimassa Epäluottamuslause-mielenosoituksessa
+    # tweet_id = '1924428162257047752'  # Haavisto: Maanantaiaamuna oli mahdollisuus käydä korkealaatuista keskustelua nuorten tilanteesta...
+    # tweet_id = '1927292506988740922'  # PSuom: mm
+    # tweet_id = '1927278416195170648'  # TSamm: mm
 
     # load and resample data
     tweet_data = load_csv(tweet_id)
     interpolated_data = interpolate_data(tweet_data, '1h')
 
-    ### add an 'impression_change' column
-    ###### now done in the interpolate_data() function
-    # Compute the change as the difference between current and previous value
-    # interpolated_data['impression_change'] = interpolated_data['impression_count'] - interpolated_data['impression_count'].shift(1)
-    # interpolated_data.loc[0, 'impression_change'] = 0
-    # interpolated_data['impression_change'] = interpolated_data['impression_change'].astype(int)
-
-    # print(interpolated_data['impression_count'].max())
-    # print("impression_change total: ", interpolated_data['impression_change'].sum())
-
-    # shares = retweets + quotes
-    shares = interpolated_data['share_count'].max()
-
-
     # plot_comparison(tweet_data, interpolated_data, 'impression_count')
 
     ### plotting metrics over time
     # plot_metric_over_time(interpolated_data, 'impression_change')
+    # plot_metric_over_time(tweet_data, 'like_count')
     # plot_metric_over_time(interpolated_data, 'impression_count')
+    # plot_metric_over_time(tweet_data, 'impression_count', title='Li Andersson, Gaza tweet: Impression Count')
 
     ### plotting the ratio of likes to impressions
     # plot_ratio_over_time(tweet_data)
 
-    ### plotting the polynomial fits
+    ## plotting the polynomial fits
     # fit_polynomial(interpolated_data, 'impression_count', degree=3)
+    # fit_polynomial(interpolated_data, 'share_count', degree=3)
+    # fit_polynomial(interpolated_data, 'like_count', degree=3)
 
-    ### plotting the exponential fits
+    ## plotting the exponential fits
     # fit_exponential(interpolated_data, 'impression_count')
 
     ### plotting the power law fit
-    # power_law_distribution(interpolated_data, 'impression_change')
-    # power_law_distribution(interpolated_data, 'impression_count')
-    # power_law_distribution(interpolated_data, 'like_count')
+    # power_law_distribution(get_max_values('impression_count', fi_tweets), 'impression_count', bin_count=6)
+    # power_law_distribution(get_max_values('share_count', fi_tweets), 'share_count', bin_count=6)
+    # power_law_distribution(get_max_values('retweet_count', fi_tweets), 'retweet_count', bin_count=10)
+    # follower_counts = {
+    # "politician": [
+    #     "Riikka Purra (PS)", "Sebastian Tynkkynen (Ps)", "Minja Koskela (Vas)", "Tere Sammallahti (Kok)",
+    #     "Veronkia Honkasalo (Vas)", "Tere Sammallahti (Kok)", "Atte Kaleva (Kok)", "Perussuomalaiset",
+    #     "Riikka Purra (PS)", "Petteri Orpo (Kok)", "Pekka Toveri (Kok)", "Li Andersson (Vas)", "Pekka Haavisto (Vihr)"
+    # ],
+    # "follower_count": [
+    #     89500, 51400, 24900, 9326, 25900, 9326, 35300, 43600, 89500, 140000, 103400, 164700, 195100
+    # ]
+    # }
+    # follower_counts = pd.DataFrame(follower_counts)
+    # print(follower_counts)
+    # power_law_distribution(follower_counts, 'follower_count', bin_count=10)
 
-    ### power law fit for all tweets
-    # power_law_distribution(get_max_values('impression_count', all_tweets), 'impression_count', bin_count=6)
-    # power_law_distribution(get_max_values('share_count', all_tweets), 'share_count', bin_count=10)
 
-
-    # return
-
-    """4."""
-    # We will use the ammount of X/Twitter users as the population
-    # https://worldpopulationreview.com/country-rankings/twitter-users-by-country as a source
-    # for the population size
-
-    # # X users in 2024 according to World Population Review
-    # population_finland = 1600000  # 1.6M
-    # population_usa = 111300000  # 111.3M
-    # population_germany = 17000000  # 17M
 
     # Population defined as 100 * the largest number of shares observer in a country
     # Here we will count both retweets and quotes as shares
-    population_finland = 324 * 100  # Riikka Purra
-    population_usa = 2384 * 100  # Mike Collins, Trumps numbers are too global
+    population_finland = 324 * 100
+    population_usa = 2384 * 100
+    minimum_infected = 1 / population_finland
 
 
-    # Network creation, creating a random graph based on population size
-    # g_fi = nx.erdos_renyi_graph(32200, 0.005, seed=2025)
-    # Barabási–Albert model: connection or "follower" counts follow the power law, just like real Twitter follower counts
-    # I'm not sure how to choose initial connections so 10 sounds good enough
-    # print('fi:', datetime.datetime.now())
 
-
-    # print('BA:', datetime.datetime.now())
     # Barabási-Albert-graph
     g_fi_ba = get_barabasi_albert_graph('fi', population_finland, 3, seed=2025)
-    # print('DONE\nER:', datetime.datetime.now())
     # g_fi_er = get_erdos_renyi_graph("fi", population_finland, 0.01, seed=2025)
     # g_fi_er = get_erdos_renyi_graph("fi", population_finland, 0.0000926, seed=2025)  # Average degree 3: 3/32399=0.0000926
     # g_fi_er = get_erdos_renyi_graph('fi', population_finland, 0.003, seed=2025)
-    # print('DONE:', datetime.datetime.now())
-
-    # g_fi_er = g_fi_ba
-
-    # print(g_fi_ba)
-    # print(g_fi_er)
-
-
-    # print('usa:', datetime.datetime.now())
-    # g_usa = generate_graph("usa", population_usa, 10, seed=2025)
-    # print('start:', datetime.datetime.now())
-
-    # initial_fraction_infected = interpolated_data['impression_change'][0] / population_finland
-    # if initial_fraction_infected < 0.05:
-    #     initial_fraction_infected = 0.05
-    # initial_fraction_infected = 0.005
-
-    """  parameters for running many simulations at once  """
-    # beta_range = np.arange(0.01, 0.15, 0.01)  # Infection
-    beta_range = np.arange(0.01, 0.1, 0.01)  # Infection
-    lambda_range = np.arange(0.1, 0.15, 0.01)  # Recovery, SIS
-    gamma_range = np.arange(0.01, 0.2, 0.01)  # Removal, SIR
-
-
-    # impressions gained in the first 15 minutes as a fraction of the total population
-    initial_fraction_infected = interpolated_data['impression_change'][1] / population_finland / 4
-    # initial_fraction_infected = interpolated_data['like_count'][1] / population_finland / 4
-    # or just 0.001
-    # initial_fraction_infected = 0.01
-    # initial infection rate is the maximum impression gained in an hour
-    # initial_fraction_infected = interpolated_data['impression_change'].max() / population_finland
 
     """ run many simulations to find optimal parameters """
     # SIR
-    # beta, lambda_, gamma = model_infection(g_fi_ba, interpolated_data, tweet_id, beta_range, lambda_range, gamma_range, initial_fraction_infected,'SIR', 'impression_change', display_results=True)
-    # SIS
-    # beta, lambda_, gamma = model_infection(g_fi_ba, interpolated_data, tweet_id, beta_range, lambda_range, gamma_range, initial_fraction_infected,'SIS', 'like_count')
+    # initial_fraction_infected = interpolated_data['impression_change'][1] / population_finland / 4
+    # if initial_fraction_infected < minimum_infected:
+    #     initial_fraction_infected = minimum_infected
+    # beta_range = np.arange(0.002, 0.035, 0.002)  # Infection
+    # gamma_range = np.arange(0.05, 0.25, 0.01)  # Removal, SIR
+    # beta, gamma = find_best_SIR_parameters(g_fi_ba, interpolated_data, tweet_id, beta_range, gamma_range, initial_fraction_infected, 'impression_change', True, True)
     #
-    # beta=0.02  # time dependent sir
-    # gamma=0.14
+    # print(beta, gamma)
+    # return
+
+    # SIS
+    # initial_fraction_infected = interpolated_data['share_count'][1] / population_finland / 4
+    # if initial_fraction_infected < minimum_infected:
+    #     initial_fraction_infected = minimum_infected
+    # initial_fraction_infected = 0.005
+    # beta_range = np.arange(0.002, 0.024, 0.002)  # Infection
+    # lambda_range = np.arange(0.01, 0.15, 0.01)  # Recovery, SIS
+    # beta, lambda_ = find_best_SIS_parameters(g_fi_ba, interpolated_data, tweet_id, beta_range, lambda_range, initial_fraction_infected , 'share_count', True, True)
+
+    # beta=0.06  # time dependent sir
+    # gamma=0.23
     #
     # # run the simulation with the learnt optimal values
     # result = run_time_dependent_SIR_simulation(g_fi_ba, interpolated_data, beta, gamma,
-    #                         initial_fraction_infected, data_type='impression_change', plot=True, return_MSE=True)
-    # print(result)
-    # beta=0.02  # normal sir
-    # gamma=0.18
-    #
-    # run the simulation with the learnt optimal values
-    # result = run_SIR_simulation(g_fi_ba, interpolated_data, beta, gamma,
-    #                         initial_fraction_infected, data_type='impression_change', plot=True, return_MSE=True)
-    # print(result)
-    # beta=0.02
-    # lambda_=0.16
-    # result = run_SIS_simulation(g_fi_ba, interpolated_data, beta, lambda_,
-    #                         initial_fraction_infected, data_type='like_count', plot=True, return_MSE=False)
+    #                         initial_fraction_infected, data_type='impression_change', plot=True, return_MSE=False)
+    # initial_fraction_infected = 0.1
 
+    # print(result)
+    # beta=0.032  # normal sir
+    # gamma=0.23
+    # initial_fraction_infected = interpolated_data['impression_change'][1] / population_finland / 4
+    # # run the simulation with the learnt optimal values
+    # result = run_SIR_simulation(g_fi_ba, interpolated_data, beta, gamma,
+    #                         initial_fraction_infected, data_type='impression_change', plot=True, return_MSE=False)
+    # print(result)
+
+    # beta=0.012
+    # lambda_=0.1
+    # # initial_fraction_infected = interpolated_data['share_count'][1] / population_finland / 4
+    # initial_fraction_infected = 0.005
+    #
+    # # Get the last row of the DataFrame
+    # last_row = interpolated_data.tail(1)
+    # # Extend the last row by repeating it 24 times
+    # extended_rows = pd.concat([last_row] * 48, ignore_index=True)
+    # # Append the extended rows to the original DataFrame
+    # d_extended = pd.concat([interpolated_data, extended_rows], ignore_index=True)
+    #
+    # if initial_fraction_infected < minimum_infected:
+    #     initial_fraction_infected = minimum_infected
+    # result = run_SIS_simulation(g_fi_ba, d_extended, beta, lambda_,
+    #                             initial_fraction_infected, data_type='share_count', plot=True, return_MSE=False)
+    # print(result)
+    #
+    # return
 
     """running trough the simulations with the optimal average values"""
+
     # beta=0.02  # normal sir
     # gamma=0.156
     #
@@ -953,53 +994,201 @@ def main():
     # return
     # run the simulation with the learnt optimal values
 
+    """ SIR simulations """
 
-    print("Running Normal SIR simulations")
+    # beta_range = np.arange(0.002, 0.035, 0.002)  # Infection
+    # gamma_range = np.arange(0.05, 0.25, 0.01)  # Removal, SIR
+    #
+    # datatype = "impression_change"
+    # print("Running Normal SIR simulations for data type ", datatype)
+    # # impressions gained in the first 15 minutes as a fraction of the total population
+    # # initial_fraction_infected = interpolated_data['impression_change'][1] / population_finland / 4
+    # # if initial_fraction_infected < minimum_infected:
+    # #     initial_fraction_infected = minimum_infected
+    #
+    # # initial fraction infected is 10 %
+    # initial_fraction_infected = 0.1
+    #
+    #
+    # """iterate through all the fi tweets to find an average best values"""
+    # optimal_values_fi = []  # (beta, gamma)
+    # for id in fi_tweets:
+    #     d = interpolate_data(load_csv(id))
+    #     print(f"{datetime.datetime.now().strftime('%H:%M')} Staring analysis on tweet: ", id)
+    #     beta, gamma = find_best_SIR_parameters(g_fi_ba, d, tweet_id, beta_range, gamma_range, initial_fraction_infected, datatype, True, False)
+    #     optimal_values_fi.append((beta, gamma))
+    #
+    # print("Optimal values for all fi tweets: ", optimal_values_fi)
+    # beta_values = [value[0] for value in optimal_values_fi]
+    # beta_avg = np.mean(beta_values)
+    # gamma_values = [value[1] for value in optimal_values_fi]
+    # gamma_avg = np.mean(gamma_values)
+    # optimal_avg_values_fi = (beta_avg, gamma_avg)
+    #
+    # print("Optimal values for ALL finnish tweets: ", optimal_avg_values_fi)
+    #
+    #
+    # """iterate through all the tweets to find an average best values GAZA"""
+    # optimal_values_gaza = optimal_values_fi[0:6]
+    # beta_values = [value[0] for value in optimal_values_gaza]
+    # beta_avg = np.mean(beta_values)
+    # gamma_values = [value[1] for value in optimal_values_gaza]
+    # gamma_avg = np.mean(gamma_values)
+    # optimal_avg_values_gaza = (beta_avg, gamma_avg)
+    # print("Optimal average values for gaza tweets: ", optimal_avg_values_gaza)
+    #
+    # """iterate through all the tweets to find an average best values NON GAZA"""
+    # optimal_values_non_gaza = optimal_values_fi[6:]
+    # beta_values = [value[0] for value in optimal_values_non_gaza]
+    # beta_avg = np.mean(beta_values)
+    # gamma_values = [value[1] for value in optimal_values_non_gaza]
+    # gamma_avg = np.mean(gamma_values)
+    # optimal_avg_values_non_gaza = (beta_avg, gamma_avg)
+    # print("Optimal average values for non gaza tweets: ", optimal_avg_values_non_gaza)
 
-    """iterate through all the fi tweets to find an average best values"""
-    optimal_values_fi = []  # (beta, gamma)
-    for id in fi_tweets:
-        d = interpolate_data(load_csv(id))
-        print(f"{datetime.datetime.now().strftime('%H:%M')} Staring analysis on tweet: ", id)
-        beta, lambda_, gamma = model_infection(g_fi_ba, d, tweet_id, beta_range, lambda_range, gamma_range, initial_fraction_infected,'SIR', 'impression_change')
-        optimal_values_fi.append((beta, gamma))
 
-    print("Optimal values for fi tweets: ", optimal_values_fi)
-    beta_values = [value[0] for value in optimal_values_fi]
-    beta_avg = np.mean(beta_values)
-    gamma_values = [value[1] for value in optimal_values_fi]
-    gamma_avg = np.mean(gamma_values)
-    optimal_avg_values_fi = (beta_avg, gamma_avg)
+    """ SIS Simulations """
 
-    print("Optimal values for finnish tweets: ", optimal_avg_values_fi)
+    # print("\nbeginning the SIS simulations...\n")
+    #
+    # beta_range = np.arange(0.001, 0.024, 0.001)  # Infection
+    # lambda_range = np.arange(0.01, 0.15, 0.01)  # Recovery, SIS
+    #
+    # datatype = "share_count"
+    # print("Running Normal SIS simulations for data type ", datatype)
+    # # # impressions gained in the first 15 minutes as a fraction of the total population
+    # # initial_fraction_infected = interpolated_data['share_count'][1] / population_finland / 4
+    # # if initial_fraction_infected < minimum_infected:
+    # #     initial_fraction_infected = minimum_infected
+    # # fraction infected 0.5 %
+    # initial_fraction_infected = 0.005
+    #
+    #
+    # """iterate through all the fi tweets to find an average best values"""
+    # optimal_values_fi = []  # (beta, gamma)
+    # for id in fi_tweets:
+    #     d = interpolate_data(load_csv(id))
+    #     print(f"{datetime.datetime.now().strftime('%H:%M')} Staring analysis on tweet: ", id)
+    #     beta, gamma = find_best_SIS_parameters(g_fi_ba, d, tweet_id, beta_range, lambda_range, initial_fraction_infected, datatype, True, False)
+    #     optimal_values_fi.append((beta, gamma))
+    #
+    # # Formatting the output
+    # formatted_values_fi = [(round(float(x), 3), round(float(y), 3)) for x, y in optimal_values_fi]
+    # print("Optimal values for all fi tweets: ", formatted_values_fi)
+    #
+    # beta_values = [value[0] for value in optimal_values_fi]
+    # beta_avg = np.mean(beta_values)
+    # gamma_values = [value[1] for value in optimal_values_fi]
+    # gamma_avg = np.mean(gamma_values)
+    # # optimal_avg_values_fi = (beta_avg, gamma_avg)
+    # # print("Optimal average values for finnish tweets: ", optimal_avg_values_fi)
+    # # Format the average values
+    # optimal_avg_values_fi = (round(float(beta_avg), 3), round(float(gamma_avg), 3))
+    # print("Average optimal values for fi tweets: ", optimal_avg_values_fi)
+    #
+    # """iterate through all the tweets to find an average best values GAZA"""
+    # optimal_values_gaza = optimal_values_fi[0:6]
+    # beta_values = [value[0] for value in optimal_values_gaza]
+    # beta_avg = np.mean(beta_values)
+    # gamma_values = [value[1] for value in optimal_values_gaza]
+    # gamma_avg = np.mean(gamma_values)
+    # # optimal_avg_values_gaza = (beta_avg, gamma_avg)
+    # # print("Optimal values for gaza tweets: ", optimal_avg_values_gaza)
+    # optimal_avg_values_gaza = (round(float(beta_avg), 3), round(float(gamma_avg), 3))
+    # print("Average optimal values for gaza tweets: ", optimal_avg_values_gaza)
+    #
+    # """iterate through all the tweets to find an average best values NON GAZA"""
+    # optimal_values_non_gaza = optimal_values_fi[6:]
+    # beta_values = [value[0] for value in optimal_values_non_gaza]
+    # beta_avg = np.mean(beta_values)
+    # gamma_values = [value[1] for value in optimal_values_non_gaza]
+    # gamma_avg = np.mean(gamma_values)
+    # # optimal_avg_values_non_gaza = (beta_avg, gamma_avg)
+    # # print("Optimal values for non gaza tweets: ", optimal_avg_values_non_gaza)
+    # optimal_avg_values_non_gaza = (round(float(beta_avg), 3), round(float(gamma_avg), 3))
+    # print("Average optimal values for non-gaza tweets: ", optimal_avg_values_non_gaza)
 
-    """iterate through all the usa tweets to find an average best values"""
-    optimal_values_usa = []  # (beta, gamma)
-    for id in usa_tweets:
-        d = interpolate_data(load_csv(id))
-        print(f"{datetime.datetime.now().strftime('%H:%M')} Staring analysis on tweet: ", id)
-        beta, lambda_, gamma = model_infection(g_fi_ba, d, tweet_id, beta_range, lambda_range, gamma_range, initial_fraction_infected,'SIR', 'impression_change')
-        optimal_values_usa.append((beta, gamma))
+    def compare_trends(trends, title=None):
+        """
+        Compares a list of trends and displays them in a graph.
 
-    print("Optimal values for usa tweets: ", optimal_values_usa)
-    beta_values = [value[0] for value in optimal_values_usa]
-    beta_avg = np.mean(beta_values)
-    gamma_values = [value[1] for value in optimal_values_usa]
-    gamma_avg = np.mean(gamma_values)
-    optimal_avg_values_usa = (beta_avg, gamma_avg)
+        Parameters:
+        - trends: List of trends, where each trend is a dictionary containing 'node_count'.
+        - plot: Boolean indicating whether to plot the trends.
+        - title: Title of the plot.
+        """
+        plt.figure(figsize=(10, 6))
 
-    print("Optimal values for usa tweets: ", optimal_avg_values_usa)
+        for i, trend in enumerate(trends):
+            infected = trend[0]['trends']['node_count'][1]
 
-    """iterate through all the tweets to find an average best values"""
-    optimal_values_all = optimal_values_fi + optimal_values_usa  # combine all tweets
-    beta_values = [value[0] for value in optimal_values_all]
-    beta_avg = np.mean(beta_values)
-    gamma_values = [value[1] for value in optimal_values_all]
-    gamma_avg = np.mean(gamma_values)
-    optimal_avg_values_all = (beta_avg, gamma_avg)
+            plt.plot(infected, label=f'Simulation {i + 1}')
 
-    print("Optimal values for all tweets: ", optimal_avg_values_all)
+        plt.xlabel('Hours')
+        plt.ylabel('Number of Nodes Infected')
+        plt.title(title if title else 'Trends')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
+    """showing the results of 10 SIS simulations in one graph"""
+    # trends = []
+    # beta = 0.008
+    # lambda_ = 0.077
+    # fraction_infected = 0.005
+    # data_type = 'share_count'
+    # for _ in range(10):
+    #     trends.append(run_SIS_simulation(g_fi_ba, interpolated_data, beta, lambda_, fraction_infected, data_type, False, "trends"))
+    #
+    # compare_trends(trends, f'10 SIS simulations with the average best parameters for all tweets b={beta:.3f}, l={lambda_:.2f}')
+
+    """showing the results of 5 SIR simulations in one graph"""
+    # trends = []
+    # beta = 0.032
+    # gamma = 0.23
+    # fraction_infected = interpolated_data['impression_change'][1] / population_finland / 4
+    # data_type = 'impression_change'
+    # for _ in range(5):
+    #     trends.append(run_SIR_simulation(g_fi_ba, interpolated_data, beta, gamma, fraction_infected, data_type, False,
+    #                                      "trends"))
+    # compare_trends(trends, f'5 SIR simulations with the best parameters for Tweet 1 b={beta:.3f}, g={gamma:.2f}')
+
+
+    """Show the original data for all tweets in one graph"""
+    def plot_all_tweets(all_tweets, data_type):
+        """
+        Plots the values from a specified data_type column across multiple DataFrames.
+
+        Parameters:
+        - all_tweets: List of Pandas DataFrames.
+        - data_type: The column name to plot values from.
+        - plot: Boolean indicating whether to plot the trends.
+        - title: Title of the plot.
+        """
+        plt.figure(figsize=(10, 6))
+
+        for i, df in enumerate(all_tweets):
+            if data_type in df.columns:
+                # Extract the values from the specified column
+                values = df[data_type].values
+
+                # Plot the values for the current DataFrame
+                plt.plot(values, label=f'Tweet {i + 1}')
+
+        plt.xlabel('Index')
+        plt.ylabel(data_type)
+        plt.title(f'Values of {data_type} Across All Tweets')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    tweets = []
+    for tweet in fi_tweets:
+        tweets.append(interpolate_data(load_csv(tweet)))
+    plot_all_tweets(tweets, 'bookmark_count')
+
+
+    """some other stuff"""
 
     # 0.007,0.01,0.0
     # 0.005,0.01,0.0

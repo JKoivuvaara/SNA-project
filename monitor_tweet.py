@@ -216,9 +216,9 @@ def main():
     # add_tweet_to_queue('1924127364780261454')  # Alice Weidel: Bielefeld: Ein Syrer verletzt 5 Menschen zum Teil schwer.
     # add_tweet_to_queue('1924428162257047752')  # Haavisto: Maanantaiaamuna oli mahdollisuus käydä korkealaatuista keskustelua nuorten tilanteesta...
     # add_tweet_to_queue('1924437434521010605')  # Orpo: Gazan siviilien kärsimyksen on loputtava. Suomi vaatii Israelia...
-    add_tweet_to_queue('1926997808369840418')
-    add_tweet_to_queue('1927003736154554560')
-    add_tweet_to_queue('1927013798415585709')
+    # add_tweet_to_queue('1926997808369840418')
+    # add_tweet_to_queue('1927003736154554560')
+    # add_tweet_to_queue('1927013798415585709')
 
     monitor_tweets()
 
